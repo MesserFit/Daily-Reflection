@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Reflection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* =========================================================
+     CONFIG — fill these in before hosting
+     ========================================================= */
+  /* See the <script id="config"> block near the bottom of <body> */
+
+  :root {
+    --paper: #F7F4EE;
+    --paper-edge: #EFEAE0;
+    --ink: #1B2430;
+    --ink-soft: #3D4654;
+    --slate: #6B7280;
+    --rule: #E3DED3;
+    --brass: #B8925A;
+    --brass-dark: #96723F;
+    --danger: #B0524A;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper-edge);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  .jrnl-page {
+    width: 100%;
+    max-width: 720px;
+    position: relative;
+  }
+
+  .jrnl-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .jrnl-datewrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .jrnl-navbtn {
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: background 0.15s ease, border-color 0.15s ease;
+    font-size: 16px;
+  }
+  .jrnl-navbtn:hover { background: #fff; border-color: var(--brass); color: var(--brass-dark); }
+  .jrnl-navbtn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  .jrnl-datelabel {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    min-width: 150px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .jrnl-datelabel .today-tag {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brass-dark);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .jrnl-streak {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--slate);
+    font-weight: 500;
+  }
+
+  .jrnl-history-btn {
+    background: none;
+    border: none;
+    color: var(--slate);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 6px;
+  }
+  .jrnl-history-btn:hover { background: #fff; color: var(--ink); }
+
+  .jrnl-sheet {
+    background: var(--paper);
+    border-radius: 3px 10px 10px 3px;
+    box-shadow:
+      -6px 0 0 var(--paper-edge),
+      0 1px 3px rgba(27,36,48,0.06),
+      0 12px 28px rgba(27,36,48,0.08);
+    border-left: 3px solid var(--brass);
+    padding: 36px 36px 44px;
+    position: relative;
+    overflow: hidden;
+  }
+  .jrnl-sheet::before {
+    content: '';
+    position: absolute;
+    left: 46px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 3px,
+      var(--rule) 3px, var(--rule) 4px
+    );
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .jrnl-heading {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .jrnl-subheading {
+    font-size: 12.5px;
+    color: var(--slate);
+    margin: 0 0 28px;
+  }
+
+  .jrnl-prompt { margin-bottom: 22px; }
+  .jrnl-prompt label {
+    display: block;
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .jrnl-prompt textarea {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink);
+    padding: 6px 2px 10px;
+    resize: none;
+    min-height: 40px;
+    line-height: 1.55;
+  }
+  .jrnl-prompt textarea::placeholder { color: #B3ADA0; }
+  .jrnl-prompt textarea:focus { outline: none; border-bottom-color: var(--brass); }
+
+  .jrnl-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 34px 0 22px;
+  }
+  .jrnl-divider::before, .jrnl-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  .jrnl-divider span {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--brass-dark);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .jrnl-hourrow {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+  }
+  .jrnl-hourrow:last-child { border-bottom: none; }
+  .jrnl-hourlabel {
+    font-size: 12px;
+    color: var(--slate);
+    font-weight: 500;
+    padding: 9px 8px 9px 0;
+  }
+  .jrnl-hourinput {
+    border: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 9px 2px;
+    width: 100%;
+  }
+  .jrnl-hourinput::placeholder { color: #C6C0B3; }
+  .jrnl-hourinput:focus { outline: none; background: #FBF9F4; }
+
+  .jrnl-savestate {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 11px;
+    color: var(--slate);
+  }
+
+  .jrnl-loading, .jrnl-error {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--slate);
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+  }
+  .jrnl-error { color: var(--danger); }
+
+  .jrnl-history-panel {
+    background: var(--paper);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(27,36,48,0.12);
+    padding: 20px;
+    margin-bottom: 18px;
+    border: 1px solid var(--rule);
+    display: none;
+  }
+  .jrnl-history-panel.open { display: block; }
+  .jrnl-history-panel h3 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: var(--ink-soft);
+  }
+  .jrnl-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .jrnl-history-item {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .jrnl-history-item:hover { background: var(--paper-edge); }
+  .jrnl-history-item.is-active { background: rgba(184,146,90,0.12); color: var(--brass-dark); font-weight: 600; }
+  .jrnl-history-empty { font-size: 13px; color: var(--slate); font-style: italic; }
+
+  .jrnl-login {
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 40px 32px;
+    text-align: center;
+    box-shadow: 0 12px 28px rgba(27,36,48,0.08);
+  }
+  .jrnl-login h2 {
+    font-family: 'Source Serif 4', serif;
+    margin-top: 0;
+  }
+  .jrnl-login input {
+    width: 100%;
+    max-width: 320px;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 14px;
+    margin: 6px 0;
+    font-family: 'Inter', sans-serif;
+  }
+  .jrnl-login button {
+    background: var(--brass);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .jrnl-login button:hover { background: var(--brass-dark); }
+  .jrnl-login .jrnl-login-error { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .jrnl-login .switch-mode {
+    background: none;
+    color: var(--slate);
+    text-decoration: underline;
+    padding: 0;
+    margin-top: 14px;
+    font-weight: 400;
+  }
+  .jrnl-login .switch-mode:hover { background: none; color: var(--ink); }
+
+  .jrnl-signout {
+    font-size: 11px;
+    color: var(--slate);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 520px) {
+    .jrnl-sheet { padding: 26px 18px 32px; }
+    .jrnl-sheet::before { left: 30px; }
+    .jrnl-heading { font-size: 22px; }
+    .jrnl-hourrow { grid-template-columns: 52px 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="jrnl-page" id="app">
+  <div class="jrnl-loading">Turning to the page…</div>
+</div>
+
+<!-- =========================================================
+     CONFIG — put your Supabase project values here
+     ========================================================= -->
+<script id="config">
+  window.SUPABASE_URL = "https://mxfzpbadvpqsanuqyvvk.supabase.co";
+  window.SUPABASE_ANON_KEY = "sb_publishable_KmN8MvmAq91tyqKxHQc7vg_AUY-_9ZE";
+</script>
+
+<script>
+const HOURS = [
+  "4 AM","5 AM","6 AM","7 AM","8 AM","9 AM","10 AM","11 AM","12 PM",
+  "1 PM","2 PM","3 PM","4 PM","5 PM","6 PM","7 PM","8 PM","9 PM",
+  "10 PM","11 PM","12 AM","1 AM","2 AM","3 AM"
+];
+
+const PROMPTS = [
+  { key: "grateful", label: "Who am I going to tell I'm grateful for today?" },
+  { key: "excited", label: "What am I excited for today?" },
+  { key: "stress", label: "What things can cause stress today? How can I handle it?" },
+  { key: "uncomfortable", label: "What made me uncomfortable yesterday?" },
+  { key: "bold", label: "What's one bold action or conversation I'm going to have today?" },
+  { key: "word", label: "What's one word to describe the person I'm going to be today?" },
+];
+
+function emptyEntry() {
+  return { grateful: "", excited: "", stress: "", uncomfortable: "", bold: "", word: "", hours: {} };
+}
+
+function todayKey(d = new Date()) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function prettyDate(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
+function addDays(key, delta) {
+  const [y,m,d] = key.split("-").map(Number);
+  const dt = new Date(y,m-1,d);
+  dt.setDate(dt.getDate()+delta);
+  return todayKey(dt);
+}
+
+// ---- Supabase setup ----
+const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+let state = {
+  user: null,
+  dateKey: todayKey(),
+  entry: emptyEntry(),
+  allDates: [],
+  loading: true,
+  saveState: "saved", // "saved" | "saving" | "error"
+  historyOpen: false,
+  authError: "",
+  authMode: "signin", // "signin" | "signup"
+};
+
+let saveTimer = null;
+const app = document.getElementById("app");
+
+// ---- Data access ----
+async function fetchEntry(dateKey) {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("content")
+    .eq("user_id", state.user.id)
+    .eq("entry_date", dateKey)
+    .maybeSingle();
+  if (error) { console.error(error); return emptyEntry(); }
+  return data ? data.content : emptyEntry();
+}
+
+async function fetchAllDates() {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("entry_date")
+    .eq("user_id", state.user.id)
+    .order("entry_date", { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data.map(r => r.entry_date);
+}
+
+async function persistEntry(dateKey, entry) {
+  const { error } = await supabase
+    .from("journal_entries")
+    .upsert({ user_id: state.user.id, entry_date: dateKey, content: entry }, { onConflict: "user_id,entry_date" });
+  if (error) { console.error(error); return false; }
+  return true;
+}
+
+function computeStreak(dates) {
+  const set = new Set(dates);
+  let cursor = todayKey();
+  if (!set.has(cursor)) cursor = addDays(cursor, -1);
+  let count = 0;
+  while (set.has(cursor)) { count++; cursor = addDays(cursor, -1); }
+  return count;
+}
+
+// ---- Rendering ----
+function render() {
+  if (!state.user) { renderLogin(); return; }
+  if (state.loading) {
+    app.innerHTML = `<div class="jrnl-loading">Turning to the page…</div>`;
+    return;
+  }
+
+  const streak = computeStreak(state.allDates);
+  const isToday = state.dateKey === todayKey();
+
+  app.innerHTML = `
+    <div class="jrnl-topbar">
+      <div class="jrnl-datewrap">
+        <button class="jrnl-navbtn" id="prevBtn" aria-label="Previous day">&#8249;</button>
+        <span class="jrnl-datelabel" id="dateLabel" role="button" tabindex="0">
+          ${prettyDate(state.dateKey)}
+          ${isToday ? '<span class="today-tag">Today</span>' : ''}
+        </span>
+        <button class="jrnl-navbtn" id="nextBtn" aria-label="Next day">&#8250;</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        ${streak > 0 ? `<div class="jrnl-streak">${streak} ${streak === 1 ? 'day' : 'days'}</div>` : ''}
+        <button class="jrnl-history-btn" id="historyBtn">History</button>
+        <button class="jrnl-signout" id="signoutBtn">Sign out</button>
+      </div>
+    </div>
+
+    <div class="jrnl-history-panel ${state.historyOpen ? 'open' : ''}" id="historyPanel">
+      <h3>Past entries</h3>
+      ${state.allDates.length === 0
+        ? `<p class="jrnl-history-empty">Nothing logged yet — today is a good place to start.</p>`
+        : `<div class="jrnl-history-list">
+            ${state.allDates.map(k => `
+              <button class="jrnl-history-item ${k === state.dateKey ? 'is-active' : ''}" data-date="${k}">
+                <span>${prettyDate(k)}</span>
+                ${k === todayKey() ? '<span>Today</span>' : ''}
+              </button>
+            `).join('')}
+          </div>`
+      }
+    </div>
+
+    <div class="jrnl-sheet">
+      <span class="jrnl-savestate">${state.saveState === "saving" ? "Saving…" : state.saveState === "error" ? "Not saved — check connection" : "Saved"}</span>
+      <h1 class="jrnl-heading">Daily Reflection</h1>
+      <p class="jrnl-subheading">Six questions, answered honestly, take less time than the drive to work.</p>
+
+      ${PROMPTS.map(p => `
+        <div class="jrnl-prompt">
+          <label for="prompt-${p.key}">${p.label}</label>
+          <textarea id="prompt-${p.key}" data-key="${p.key}" rows="${p.key === 'stress' || p.key === 'bold' ? 2 : 1}" placeholder="Write here…">${escapeHtml(state.entry[p.key] || "")}</textarea>
+        </div>
+      `).join('')}
+
+      <div class="jrnl-divider"><span>Hour by Hour</span></div>
+
+      <div class="jrnl-hours">
+        ${HOURS.map((h, idx) => `
+          <div class="jrnl-hourrow">
+            <span class="jrnl-hourlabel">${h}</span>
+            <input class="jrnl-hourinput" type="text" data-hour="${h}" data-idx="${idx}" value="${escapeHtml(state.entry.hours?.[h] || "")}" placeholder="—" />
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  attachHandlers();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function attachHandlers() {
+  document.getElementById("prevBtn").addEventListener("click", () => changeDate(addDays(state.dateKey, -1)));
+  document.getElementById("nextBtn").addEventListener("click", () => changeDate(addDays(state.dateKey, 1)));
+  document.getElementById("dateLabel").addEventListener("click", toggleHistory);
+  document.getElementById("historyBtn").addEventListener("click", toggleHistory);
+  document.getElementById("signoutBtn").addEventListener("click", signOut);
+
+  document.querySelectorAll(".jrnl-history-item").forEach(btn => {
+    btn.addEventListener("click", () => changeDate(btn.dataset.date, true));
+  });
+
+  document.querySelectorAll(".jrnl-prompt textarea").forEach(el => {
+    el.addEventListener("input", (e) => {
+      state.entry[e.target.dataset.key] = e.target.value;
+      scheduleSave();
+    });
+  });
+
+  document.querySelectorAll(".jrnl-hourinput").forEach(el => {
+    el.addEventListener("input", (e) => {
+      if (!state.entry.hours) state.entry.hours = {};
+      state.entry.hours[e.target.dataset.hour] = e.target.value;
+      scheduleSave();
+    });
+  });
+}
+
+function toggleHistory() {
+  state.historyOpen = !state.historyOpen;
+  render();
+}
+
+async function changeDate(newKey, closeHistory = false) {
+  state.dateKey = newKey;
+  state.loading = true;
+  if (closeHistory) state.historyOpen = false;
+  render();
+  state.entry = await fetchEntry(newKey);
+  state.loading = false;
+  state.saveState = "saved";
+  render();
+}
+
+function scheduleSave() {
+  state.saveState = "saving";
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const ok = await persistEntry(state.dateKey, state.entry);
+    state.saveState = ok ? "saved" : "error";
+    if (ok && !state.allDates.includes(state.dateKey)) {
+      state.allDates = [state.dateKey, ...state.allDates].sort().reverse();
+    }
+    // Only update the save-state text without a full re-render (avoids losing focus)
+    const el = document.querySelector(".jrnl-savestate");
+    if (el) el.textContent = state.saveState === "saving" ? "Saving…" : state.saveState === "error" ? "Not saved — check connection" : "Saved";
+  }, 600);
+}
+
+// ---- Auth ----
+function renderLogin() {
+  const isSignup = state.authMode === "signup";
+  app.innerHTML = `
+    <div class="jrnl-login">
+      <h2>${isSignup ? "Create your journal" : "Welcome back"}</h2>
+      <p style="color:var(--slate);font-size:13px;margin-top:-6px;">${isSignup ? "One account, synced across every device." : "Sign in to pick up where you left off."}</p>
+      <div>
+        <input type="email" id="authEmail" placeholder="Email" autocomplete="email" />
+      </div>
+      <div>
+        <input type="password" id="authPassword" placeholder="Password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" />
+      </div>
+      <div class="jrnl-login-error" id="authError">${state.authError || ""}</div>
+      <button id="authSubmit">${isSignup ? "Create account" : "Sign in"}</button>
+      <br/>
+      <button class="switch-mode" id="switchMode">${isSignup ? "Already have an account? Sign in" : "New here? Create an account"}</button>
+    </div>
+  `;
+
+  document.getElementById("authSubmit").addEventListener("click", handleAuthSubmit);
+  document.getElementById("authPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") handleAuthSubmit(); });
+  document.getElementById("switchMode").addEventListener("click", () => {
+    state.authMode = isSignup ? "signin" : "signup";
+    state.authError = "";
+    render();
+  });
+}
+
+async function handleAuthSubmit() {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  if (!email || !password) {
+    state.authError = "Enter both an email and password.";
+    render();
+    return;
+  }
+
+  const fn = state.authMode === "signup" ? supabase.auth.signUp : supabase.auth.signInWithPassword;
+  const { data, error } = await fn({ email, password });
+
+  if (error) {
+    state.authError = error.message;
+    render();
+    return;
+  }
+
+  if (state.authMode === "signup" && !data.session) {
+    state.authError = "Check your email to confirm your account, then sign in.";
+    render();
+    return;
+  }
+
+  await initForUser(data.user);
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+  state.user = null;
+  render();
+}
+
+async function initForUser(user) {
+  state.user = user;
+  state.loading = true;
+  render();
+  state.allDates = await fetchAllDates();
+  state.entry = await fetchEntry(state.dateKey);
+  state.loading = false;
+  render();
+}
+
+// ---- Boot ----
+(async function boot() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    await initForUser(data.session.user);
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>
